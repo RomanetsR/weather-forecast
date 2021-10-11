@@ -1,54 +1,57 @@
 from flask import Flask
 from flask import request
+from flask import redirect
 from urllib.request import urlopen
 from flask import render_template
-from weather_fuction import weather_actual
-from weather_fuction import weather_prognosis
-from  dotenv  import  dotenv_values
+from flask.helpers import url_for
+from weather_fuction import Weather_client
 import json
 
 
-config  =  dotenv_values ( ".env" ) 
-api_key = config['api']
-
 app = Flask(__name__)
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods = ['GET'])
 def index():
 
-    if request.method == 'GET':
-        if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
-            ip = request.environ['REMOTE_ADDR']
-        else:
-            ip = request.environ['HTTP_X_FORWARDED_FOR']
-        url = f'http://ipinfo.io/{ip}/json'
-        response = urlopen(url)
-        data = json.load(response)
-        city = data['city']
-        weather = weather_actual(city,api_key)
-        prognosis = weather_prognosis(city, api_key)
+    if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+        ip = request.environ['REMOTE_ADDR']
+    else:
+        ip = request.environ['HTTP_X_FORWARDED_FOR']
+    url = f'http://ipinfo.io/{ip}/json'
+    response = urlopen(url)
+    data = json.load(response)
+    city = data['city']
+    weather = Weather_client(city)
+    day_info = weather.weather_actual()
+    prognosis = weather.weather_prognosis()
+            
+    return render_template('main.html', temperature = day_info['temp'], city = city, prognosis = prognosis)
         
-        return render_template('main.html', temperature=weather['temp'], city=city, prognosis = prognosis)
 
-    elif request.method=='POST':
-        input_text=request.form['text']
-        if request.form['submit'] == 'Search':
-            if input_text.isdigit():
-                searchError = 'error'
-                return render_template('main.html', searchError=searchError)
-            else:
-                try:
-                    return city_search(input_text)
-                except:
-                    searchError = 'error'
-                    return render_template('main.html', searchError=searchError)
-
+@app.route('/<city>', methods = ['GET'])
 def city_search(city):
-    
-        city=city.capitalize()
-        weather = weather_actual(city,api_key)
-        prognosis = weather_prognosis(city, api_key)
-        return render_template('main.html', temperature=weather['temp'], city=city, prognosis = prognosis)
+
+    try:
+        city = city.capitalize()
+        weather = Weather_client(city)
+        day_info = weather.weather_actual()
+        prognosis = weather.weather_prognosis()
+                
+        return render_template('main.html', temperature = day_info['temp'], city = city, prognosis = prognosis)
+    except:
+            search_error = 'error'
+            return render_template('main.html', search_error = search_error)
+
+
+@app.route('/', methods = ['POST'])
+@app.route('/<city>', methods = ['POST'])
+def search(city = None):
+    input_text = request.form['text']
+    if input_text.isdigit():
+        search_error = 'error'
+        return render_template('main.html', search_error = search_error)
+    else:
+        return redirect(url_for('city_search', city = input_text))
 
 
 if __name__ == '__main__':
