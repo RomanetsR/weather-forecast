@@ -16,20 +16,18 @@
         <img src="static/img/logo.jpg" alt="logo.jpg" width="310" height="190">
     </div>
     <div>
-        <form method="post" role="form">
+        <form method="get" role="form" action="/search">
             <div class="form-group" style="text-align:center">
-                <input type="text" class="form-control" name="text" placeholder="Input the name of the city">            
-                <input type="submit" name="submit" value="Search" class="btn btn-success">
+                <input type="text" class="form-control" name="city" placeholder="Input the name of the city">            
+                <input type="submit" value="Search" class="btn btn-success">
             
             </div>
         </form>
         <br/>
     </div>
     <div class="info" style="text-align:center">
-        {% if search_error %}
-            <h2> This city ​​not found! Try again! </h2>
-        {% else %}
-            <h2> Air temperature in {{ city }}: {{ temperature }}°C </h2>
+        {% if succes %}
+            <h2> Air temperature in {{ city.capitalize() }}: {{ temperature }}°C </h2>
             <div id="main", style="text-align:center">
                 {% for day in prognosis %}
                     <div width="150" height="200">
@@ -38,9 +36,10 @@
                         <dl><b>{{ day.temp_max }}°</b> {{ day.temp_min }}°</dl>
                     </div>
                 {% endfor %}
+            </div>
 
-
-    </div>
+        {% else %}
+            <h2> This city ​​not found! Try again! </h2>
 
         {% endif %}
     </div>
